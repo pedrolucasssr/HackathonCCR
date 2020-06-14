@@ -8,17 +8,17 @@ from copy import copy
 
 class Lane():
     def __init__(self):
-        # was the line detected in the last frame or not
+        # Detecta se linha foi detectada no ultimo frame ou nao
         self.detected = False
-        #x values for detected line pixels
+        # Valores em x para linha detectada em pixels
         self.cur_fitx = None
-        #y values for detected line pixels
+        # Valores em y para linha detectada em pixels
         self.cur_fity = None
-        # x values of the last N fits of the line
+        # valores x para ultimas N ajustes de linha
         self.prev_fitx = []
-        #polynomial coefficients for the most recent fit
+        # Coeficientes polinomiais para ajuste mais recente
         self.current_poly = [np.array([False])]
-        #best polynomial coefficients for the last iteration
+        # Melhor coeficiente polinomial para ultima iteracao
         self.prev_poly = [np.array([False])]
 
     def average_pre_lanes(self):
