@@ -43,7 +43,7 @@ right_lane = Lane()
 frame_width = 1280
 frame_height = 720
 
-LANEWIDTH = 3.6  # largura de pista no Brasil: 3.6 meters
+LANEWIDTH = 3.6  # largura de faixa no Brasil: 3.6 meters
 input_scale = 1
 output_frame_scale = 1
 N = 4 # carregar N linhas previas
