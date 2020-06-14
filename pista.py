@@ -1,5 +1,3 @@
-"""Departure Warning System with a Monocular Camera"""
-
 import numpy as np
 import cv2
 import matplotlib.pyplot as plt
@@ -45,12 +43,12 @@ right_lane = Lane()
 frame_width = 1280
 frame_height = 720
 
-LANEWIDTH = 3.7  # highway lane width in US: 3.7 meters
+LANEWIDTH = 3.6  # largura de pista no Brasil: 3.6 meters
 input_scale = 1
 output_frame_scale = 1
-N = 4 # buffer previous N lines
+N = 4 # carregar N linhas previas
 
-# fullsize:1280x720
+# tamanho de imagem:1280x720
 x = [194, 1117, 705, 575]
 y = [719, 719, 461, 461]
 X = [290, 990, 990, 290]
@@ -62,40 +60,39 @@ dst = np.floor(np.float32([[X[0], Y[0]], [X[1], Y[1]],[X[2], Y[2]], [X[3], Y[3]]
 M = cv2.getPerspectiveTransform(src, dst)
 M_inv = cv2.getPerspectiveTransform(dst, src)
 
-# Only for creating the final video visualization
+# Para criar visualizacao final do video
 X_b = [574, 706, 706, 574]
 Y_b = [719, 719, 0, 0]
 src_ = np.floor(np.float32([[x[0], y[0]], [x[1], y[1]],[x[2], y[2]], [x[3], y[3]]]) / (input_scale*2))
 dst_ = np.floor(np.float32([[X_b[0], Y_b[0]], [X_b[1], Y_b[1]],[X_b[2], Y_b[2]], [X_b[3], Y_b[3]]]) / (input_scale*2))
 M_b = cv2.getPerspectiveTransform(src_, dst_)
-# Only for creating the final video visualization
 
-# Threshold for color and gradient thresholding
+# Limite para cor e gradiente
 s_thresh, sx_thresh, dir_thresh, m_thresh, r_thresh = (120, 255), (20, 100), (0.7, 1.3), (30, 100), (200, 255)
 
-# load the calibration
+# carrega calibracao
 calib_file = 'calibration_pickle.p'
 mtx, dist = load_calibration(calib_file)
 
 
 def abs_sobel_thresh(img, orient='x', sobel_kernel=3, thresh=(0, 255)):
 
-    # Apply the following steps to img
-    # 1) Convert to grayscale
+    # Os seguintes processos sao realizados a img
+    # 1- converte para escala de cinza
     gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
 
-    # 2) Take the derivative in x or y given orient = 'x' or 'y'
-    # 3) Take the absolute value of the derivative or gradient
+    # 2- Puxa a derivativa em x ou y dada a orientacao
+    # 3- Toma valor absoluto da derivada
     if orient == 'x':
         abs_sobel = np.absolute(cv2.Sobel(gray, cv2.CV_64F, 1, 0, ksize=sobel_kernel))
     if orient == 'y':
         abs_sobel = np.absolute(cv2.Sobel(gray, cv2.CV_64F, 0, 1, ksize=sobel_kernel))
 
-    # 4) Scale to 8-bit (0 - 255) then convert to type = np.uint8
+    # 4- Escala para 8-bit (0-255) e converte o tipo de imagem para np.uint8
     scaled_sobel = np.uint8(255.*abs_sobel/np.max(abs_sobel))
 
-    # 5) Create a mask of 1's where the scaled gradient magnitude
-    # is > thresh_min and < thresh_max
+    # 5 Cria a mascara de escala do gradiente
+    # thresh_min < VALOR < thresh_max
     binary_output = np.zeros_like(scaled_sobel)
     binary_output[(scaled_sobel >= thresh[0]) & (scaled_sobel <= thresh[1])] = 1
 
@@ -104,22 +101,22 @@ def abs_sobel_thresh(img, orient='x', sobel_kernel=3, thresh=(0, 255)):
 
 def mag_thresh(img, sobel_kernel=3, thresh=(0, 255)):
 
-    # Apply the following steps to img
-    # 1) Convert to grayscale
+    # Os seguintes processos sao realizados a img
+    # 1- converte para escala de cinza
     gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
 
-    # 2) Take the gradient in x and y separately
+    # 2- Puxa o gradiente de x e y separadamente
     sobelx = cv2.Sobel(gray, cv2.CV_64F, 1, 0, ksize=sobel_kernel)
     sobely = cv2.Sobel(gray, cv2.CV_64F, 0, 1, ksize=sobel_kernel)
 
-    # 3) Calculate the magnitude
+    # 3- Calcula a magnitude
     gradmag = np.sqrt(sobelx**2 + sobely**2)
 
-    # 4) Scale to 8-bit (0 - 255) and convert to type = np.uint8
+    # 4- Escala para 8-bit (0-255) e converte o tipo de imagem para np.uint8
     scale_factor = np.max(gradmag)/255
     gradmag = (gradmag/scale_factor).astype(np.uint8)
 
-    # 5) Create a binary mask where mag thresholds are met
+    # 5- Cria a mascara binaria onde os limites mag sao encontrados
     binary_output = np.zeros_like(gradmag)
     binary_output[(gradmag >= thresh[0]) & (gradmag <= thresh[1])] = 1
 
@@ -127,26 +124,27 @@ def mag_thresh(img, sobel_kernel=3, thresh=(0, 255)):
 
 
 def dir_threshold(img, sobel_kernel=3, thresh=(0, np.pi/2)):
-    """ threshold according to the direction of the gradient
+    """
+    Limites de acordo com a direcao do gradiente
     :param img:
     :param sobel_kernel:
     :param thresh:
     :return:
     """
 
-    # Apply the following steps to img
-    # 1) Convert to grayscale
+    # Os seguintes processos sao realizados a img
+    # 1- converte para escala de cinza
     gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
 
-    # 2) Take the gradient in x and y separately
+    # 2- Puxa o gradiente de x e y separadamente
     sobelx = cv2.Sobel(gray, cv2.CV_64F, 1, 0, ksize=sobel_kernel)
     sobely = cv2.Sobel(gray, cv2.CV_64F, 0, 1, ksize=sobel_kernel)
 
-    # 3) Take the absolute value of the x and y gradients
-    # 4) Use np.arctan2(abs_sobely, abs_sobelx) to calculate the direction of the gradient
+    # 3- Pega os valores absolutos gradiente de de x e y
+    # 4- usa np.arctan2(abs_sobely, abs_sobelx) para calcular a direcao do gradiente
     absgraddir = np.arctan2(np.absolute(sobely), np.absolute(sobelx))
 
-    # 5) Create a binary mask where direction thresholds are met
+    # 5- Cria a mascara binaria onde encontra os limites de direcao
     binary_output =  np.zeros_like(absgraddir)
     binary_output[(absgraddir >= thresh[0]) & (absgraddir <= thresh[1])] = 1
 
@@ -155,7 +153,7 @@ def dir_threshold(img, sobel_kernel=3, thresh=(0, np.pi/2)):
 
 def gradient_pipeline(image, ksize = 3, sx_thresh=(20, 100), sy_thresh=(20, 100), m_thresh=(30, 100), dir_thresh=(0.7, 1.3)):
 
-    # Apply each of the thresholding functions
+    # Aplica as funcoes de limite
     gradx = abs_sobel_thresh(image, orient='x', sobel_kernel=ksize, thresh=sx_thresh)
     grady = abs_sobel_thresh(image, orient='y', sobel_kernel=ksize, thresh=sy_thresh)
     mag_binary = mag_thresh(image, sobel_kernel=ksize, thresh=m_thresh)
@@ -179,22 +177,21 @@ def threshold_col_channel(channel, thresh):
 def find_edges(img, s_thresh=s_thresh, sx_thresh=sx_thresh, dir_thresh=dir_thresh):
 
     img = np.copy(img)
-    # Convert to HSV color space and threshold the s channel
+    # Converte para HSV color space e coloca como limite o canal s
     hls = cv2.cvtColor(img, cv2.COLOR_BGR2HLS).astype(np.float)
     s_channel = hls[:,:,2]
     s_binary = threshold_col_channel(s_channel, thresh=s_thresh)
 
-    # Sobel x
+    # Sobel em x
     sxbinary = abs_sobel_thresh(img, orient='x', sobel_kernel=3, thresh=sx_thresh)
     # mag_binary = mag_thresh(img, sobel_kernel=3, thresh=m_thresh)
-    # # gradient direction
+    # direcao do gradiente
     dir_binary = dir_threshold(img, sobel_kernel=3, thresh=dir_thresh)
-    #
-    # # output mask
+    # mascara de saida
     combined_binary = np.zeros_like(s_channel)
     combined_binary[(( (sxbinary == 1) & (dir_binary==1) ) | ( (s_binary == 1) & (dir_binary==1) ))] = 1
 
-    # add more weights for the s channel
+    # adiciona mais pesos para o canal s
     c_bi = np.zeros_like(s_channel)
     c_bi[( (sxbinary == 1) & (s_binary==1) )] = 2
 
@@ -205,88 +202,88 @@ def find_edges(img, s_thresh=s_thresh, sx_thresh=sx_thresh, dir_thresh=dir_thres
 
 def warper(img, M):
 
-    # Compute and apply perspective transform
+    # Computa e aplica a transformada de perspectiva
     img_size = (img.shape[1], img.shape[0])
-    warped = cv2.warpPerspective(img, M, img_size, flags=cv2.INTER_NEAREST)  # keep same size as input image
+    warped = cv2.warpPerspective(img, M, img_size, flags=cv2.INTER_NEAREST)  # mantem mesmo tamanho de imagem de entrada
 
     return warped
 
 
-## fit the lane line
+# Encaixa na linha de pista
 def full_search(binary_warped, visualization=False):
 
     histogram = np.sum(binary_warped[binary_warped.shape[0]//2:,:], axis=0)
-    # Create an output image to draw on and  visualize the result
+    # Cria imagem de saida para desenhar e visualizar o resultado
     out_img = np.dstack((binary_warped, binary_warped, binary_warped))*255
     out_img = out_img.astype('uint8')
 
-    # Find the peak of the left and right halves of the histogram
-    # These will be the starting point for the left and right lines
+    # Encontra o pico das metades da esquerda e direita do histograma
+    # Essas linhas serão o ponto de partida para as linhas da esquerda e da direita
     midpoint = np.int(histogram.shape[0]/2)
     leftx_base = np.argmax(histogram[:midpoint])
     rightx_base = np.argmax(histogram[midpoint:]) + midpoint
 
-    # Choose the number of sliding windows
+    # Escolhe o número de janelas deslizantes
     nwindows = 9
-    # Set height of windows
+    # Define altura das janelas
     window_height = np.int(binary_warped.shape[0]/nwindows)
-    # Identify the x and y positions of all nonzero pixels in the image
+    # Identifica posicoes x e y de todos os pixels nao zero
     nonzero = binary_warped.nonzero()
     nonzeroy = np.array(nonzero[0])
     nonzerox = np.array(nonzero[1])
-    # Current positions to be updated for each window
+    # posicoes atuais a serem atualizadas em cada janela
     leftx_current = leftx_base
     rightx_current = rightx_base
-    # Set the width of the windows +/- margin
+    # Define largura de janelas e margem
     margin = np.floor(100/input_scale)
-    # Set minimum number of pixels found to recenter window
+    # Define numero minimo de pixels encontrados para recentralizar janela
     minpix = np.floor(50/input_scale)
-    # Create empty lists to receive left and right lane pixel indices
+    # Cria listas vazias para receber indices de pixels de faixa esquerdos e direitos
     left_lane_inds = []
     right_lane_inds = []
 
-    # Step through the windows one by one
+    # Passa por cada janela
     for window in range(nwindows):
-        # Identify window boundaries in x and y (and right and left)
+        # Identifica fronteiras em x e y (esquerda e direita)
         win_y_low = binary_warped.shape[0] - (window+1)*window_height
         win_y_high = binary_warped.shape[0] - window*window_height
         win_xleft_low = leftx_current - margin
         win_xleft_high = leftx_current + margin
         win_xright_low = rightx_current - margin
         win_xright_high = rightx_current + margin
-        # Draw the windows on the visualization image
+        # Desenha na janela de visualizacao de imagem
         if visualization:
             cv2.rectangle(out_img,(int(win_xleft_low),int(win_y_low)),(int(win_xleft_high),int(win_y_high)),(0,255,0), 2)
             cv2.rectangle(out_img,(int(win_xright_low),int(win_y_low)),(int(win_xright_high),int(win_y_high)),(0,255,0), 2)
 
-        # Identify the nonzero pixels in x and y within the window
+        # Identifica os pixels nao zero em x e y na janela
         good_left_inds = ((nonzeroy >= win_y_low) & (nonzeroy < win_y_high) & (nonzerox >= win_xleft_low) & (nonzerox < win_xleft_high)).nonzero()[0]
         good_right_inds = ((nonzeroy >= win_y_low) & (nonzeroy < win_y_high) & (nonzerox >= win_xright_low) & (nonzerox < win_xright_high)).nonzero()[0]
-        # Append these indices to the lists
+        # Acrescentaos indices as listas
         left_lane_inds.append(good_left_inds)
         right_lane_inds.append(good_right_inds)
-        # If you found > minpix pixels, recenter next window on their mean position
+        # Se localizados mais pixels minpix, recentralizar proxima janela na posicao principal
         if len(good_left_inds) > minpix:
             leftx_current = np.int(np.mean(nonzerox[good_left_inds]))
         if len(good_right_inds) > minpix:
             rightx_current = np.int(np.mean(nonzerox[good_right_inds]))
 
-    # Concatenate the arrays of indices
+    # Concatena indices de matrizes
     left_lane_inds = np.concatenate(left_lane_inds)
     right_lane_inds = np.concatenate(right_lane_inds)
 
-    # Extract left and right line pixel positions
+    # Extrai posicoes dos pixels de linha direitos e esquerdos
     leftx = nonzerox[left_lane_inds]
     lefty = nonzeroy[left_lane_inds]
     rightx = nonzerox[right_lane_inds]
     righty = nonzeroy[right_lane_inds]
 
-    # Fit a second order polynomial to each
+    # Ajusta polinomio de segunda ordem a cada um
     left_fit = np.polyfit(lefty, leftx, 2)
     right_fit = np.polyfit(righty, rightx, 2)
-    # Visualization
+    # Visualizacao
 
-    # Generate x and y values for plotting
+    # Gera valores x e y para plotagem
     if visualization:
         ploty = np.linspace(0, binary_warped.shape[0]-1, binary_warped.shape[0] )
         left_fitx = left_fit[0]*ploty**2 + left_fit[1]*ploty + left_fit[2]
@@ -308,9 +305,7 @@ def full_search(binary_warped, visualization=False):
 
 
 def window_search(left_fit, right_fit, binary_warped, margin=100, visualization=False):
-    # Assume you now have a new warped binary image
-    # from the next frame of video (also called "binary_warped")
-    # It's easier to find line pixels with windows search
+    # Encontra linhas de pixel com a busca por janela
     nonzero = binary_warped.nonzero()
     nonzeroy = np.array(nonzero[0])
     nonzerox = np.array(nonzero[1])
@@ -318,32 +313,32 @@ def window_search(left_fit, right_fit, binary_warped, margin=100, visualization=
     left_lane_inds = ((nonzerox > (left_fit[0]*(nonzeroy**2) + left_fit[1]*nonzeroy + left_fit[2] - margin)) & (nonzerox < (left_fit[0]*(nonzeroy**2) + left_fit[1]*nonzeroy + left_fit[2] + margin)))
     right_lane_inds = ((nonzerox > (right_fit[0]*(nonzeroy**2) + right_fit[1]*nonzeroy + right_fit[2] - margin)) & (nonzerox < (right_fit[0]*(nonzeroy**2) + right_fit[1]*nonzeroy + right_fit[2] + margin)))
 
-    # Again, extract left and right line pixel positions
+    # Novamente extrai posicoes dos pixels de linha direitos e esquerdos
     leftx = nonzerox[left_lane_inds]
     lefty = nonzeroy[left_lane_inds]
     rightx = nonzerox[right_lane_inds]
     righty = nonzeroy[right_lane_inds]
 
-    # Fit a second order polynomial to each
+    # Ajusta polinomio de segunda ordem a cada um
     left_fit = np.polyfit(lefty, leftx, 2)
     right_fit = np.polyfit(righty, rightx, 2)
 
     if visualization:
-        # Generate x and y values for plotting
+        # Gera valores x e y para plotagem
         ploty = np.linspace(0, binary_warped.shape[0]-1, binary_warped.shape[0] )
         left_fitx = left_fit[0]*ploty**2 + left_fit[1]*ploty + left_fit[2]
         right_fitx = right_fit[0]*ploty**2 + right_fit[1]*ploty + right_fit[2]
-        # And you're done! But let's visualize the result here as well
-        # Create an image to draw on and an image to show the selection window
+        # Aqui termina o tratamento da imagem. Os proximos passos servem para visualizar os resultados
+        # Cria uma imagem para desenhar e mostrar na janela de selecao
         out_img = np.dstack((binary_warped, binary_warped, binary_warped))*255
         out_img = out_img.astype('uint8')
         window_img = np.zeros_like(out_img)
-        # Color in left and right line pixels
+        # Cor nos pixels das linhas esquerda e direita
         out_img[nonzeroy[left_lane_inds], nonzerox[left_lane_inds]] = [255, 0, 0]
         out_img[nonzeroy[right_lane_inds], nonzerox[right_lane_inds]] = [0, 0, 255]
 
-        # Generate a polygon to illustrate the search window area
-        # And recast the x and y points into usable format for cv2.fillPoly()
+        # Gera um poligono para ilustrar a area de busca da janela
+        # Tambem reformular pontos x e y para formatos usaveis para cv2.fillPoly()
         left_line_window1 = np.array([np.transpose(np.vstack([left_fitx-margin, ploty]))])
         left_line_window2 = np.array([np.flipud(np.transpose(np.vstack([left_fitx+margin, ploty])))])
         left_line_pts = np.hstack((left_line_window1, left_line_window2))
@@ -351,7 +346,7 @@ def window_search(left_fit, right_fit, binary_warped, margin=100, visualization=
         right_line_window2 = np.array([np.flipud(np.transpose(np.vstack([right_fitx+margin, ploty])))])
         right_line_pts = np.hstack((right_line_window1, right_line_window2))
 
-        # Draw the lane onto the warped blank image
+        # Desenha pista na imagem deformada
         cv2.fillPoly(window_img, np.int_([left_line_pts]), (0,255, 0))
         cv2.fillPoly(window_img, np.int_([right_line_pts]), (0,255, 0))
         result = cv2.addWeighted(out_img, 1, window_img, 0.3, 0)
@@ -368,23 +363,24 @@ def window_search(left_fit, right_fit, binary_warped, margin=100, visualization=
 
 def measure_lane_curvature(ploty, leftx, rightx, visualization=False):
 
-    leftx = leftx[::-1]  # Reverse to match top-to-bottom in y
-    rightx = rightx[::-1]  # Reverse to match top-to-bottom in y
+    # Reversao para encaixar topo a base em x e y
+    leftx = leftx[::-1]
+    rightx = rightx[::-1]
 
-     # choose the maximum y-value, corresponding to the bottom of the image
+    # Escolhe valor maximo de y, correspondente a base da imagem
     y_eval = np.max(ploty)
 
-    # Define conversions in x and y from pixels space to meters
-    ym_per_pix = 30/(frame_height/input_scale) # meters per pixel in y dimension
-    xm_per_pix = LANEWIDTH/(700/input_scale) # meters per pixel in x dimension
+    # Define conversao de espaco em x e y de pixel para metro
+    ym_per_pix = 30/(frame_height/input_scale)
+    xm_per_pix = LANEWIDTH/(700/input_scale)
 
-    # Fit new polynomials to x,y in world space
+    # Ajusta novos polinomios para x e y no espaco
     left_fit_cr = np.polyfit(ploty*ym_per_pix, leftx*xm_per_pix, 2)
     right_fit_cr = np.polyfit(ploty*ym_per_pix, rightx*xm_per_pix, 2)
-    # Calculate the new radii of curvature
+    # Calcula novo raio de curvatura
     left_curverad = ((1 + (2*left_fit_cr[0]*y_eval*ym_per_pix + left_fit_cr[1])**2)**1.5) / np.absolute(2*left_fit_cr[0])
     right_curverad = ((1 + (2*right_fit_cr[0]*y_eval*ym_per_pix + right_fit_cr[1])**2)**1.5) / np.absolute(2*right_fit_cr[0])
-    # Now our radius of curvature is in meters
+    # Agora o raio de curvatura esta em metros
     # print(left_curverad, 'm', right_curverad, 'm')
 
     if leftx[0] - leftx[-1] > 50/input_scale:
@@ -399,18 +395,20 @@ def measure_lane_curvature(ploty, leftx, rightx, visualization=False):
 
 def off_center(left, mid, right):
     """
-    :param left: left lane position
-    :param mid:  car position
-    :param right: right lane position
-    :return: True or False, indicator of off center driving
+    Define se esta fora do eixo de acordo com posicao do eixo central do veiculo
+    em relação a posicao da faixa da direita e esquerda
+    :param left: posicao da faixa da esquerda 
+    :param mid:  posicao do veiculo
+    :param right: posicao da faixa da direita
+    :return: True or False, indicador de off-center
     """
     a = mid - left
     b = right - mid
     width = right - left
 
-    if a >= b:  # driving right off
+    if a >= b:  # Perdendo o eixo para direita
         offset = a / width * LANEWIDTH - LANEWIDTH /2.0
-    else:       # driving left off
+    else:       # Perdendo o eixo para esquerda
         offset = LANEWIDTH /2.0 - b / width * LANEWIDTH
 
     return offset
@@ -418,11 +416,11 @@ def off_center(left, mid, right):
 
 def compute_car_offcenter(ploty, left_fitx, right_fitx, undist):
 
-    # Create an image to draw the lines on
+    # Cria imagem para desenho das linhas
     height = undist.shape[0]
     width = undist.shape[1]
 
-    # Recast the x and y points into usable format for cv2.fillPoly()
+    # Reformula pontos x e y para formatos usaveis para cv2.fillPoly()
     pts_left = np.array([np.transpose(np.vstack([left_fitx, ploty]))])
     pts_right = np.array([np.flipud(np.transpose(np.vstack([right_fitx, ploty])))])
     pts = np.hstack((pts_left, pts_right))
@@ -453,25 +451,26 @@ def create_output_frame(offcenter, pts, undist_ori, fps, curvature, curve_direct
 
     color_warp = np.zeros_like(undist_ori).astype(np.uint8)
 
-    # create a frame to hold every image
+    # Cria frame para cada imagem
     whole_frame = np.zeros((int(h*2.5), int(w*2.34), 3), dtype=np.uint8)
 
 
-    if abs(offcenter) > threshold:  # car is offcenter more than 0.6 m
-        # Draw Red lane
+    if abs(offcenter) > threshold:  # Se o veiculo esta fora do centro mais de 0.6m
+        # Faixa vermelha
         cv2.fillPoly(color_warp, np.int_([pts]), (255, 0, 0)) # red
-    else: # Draw Green lane
+    else: # Faixa verde
         cv2.fillPoly(color_warp, np.int_([pts]), (0,255, 0))  # green
 
     newwarp = cv2.warpPerspective(color_warp, M_inv, (int(frame_width/input_scale), int(frame_height/input_scale)))
 
-    # Combine the result with the original image    # result = cv2.addWeighted(undist, 1, newwarp, 0.3, 0)
+    # Combina resultado com imagem original  
+    # result = cv2.addWeighted(undist, 1, newwarp, 0.3, 0)
 
     newwarp_ = cv2.resize(newwarp,None, fx=input_scale/output_frame_scale, fy=input_scale/output_frame_scale, interpolation = cv2.INTER_LINEAR)
 
     output = cv2.addWeighted(undist_ori, 1, newwarp_, 0.3, 0)
 
-    ############## generate the combined output frame only for visualization purpose ################
+    ############## Gera saida combinada para visualizacao apenas ################
     # whole_frame[40:40+h, 20:20+w, :] = undist_ori
     # whole_frame[40:40+h, 60+w:60+2*w, :] = output
     # whole_frame[220+h/2:220+2*h/2, 20:20+w/2, :] = undist_birdview
@@ -486,25 +485,6 @@ def create_output_frame(offcenter, pts, undist_ori, fps, curvature, curve_direct
     elif offcenter < 0:
         offset = -offcenter
         direction = 'Left'
-    #
-    # info_road = "Road Status"
-    # info_lane = "Lane info: {0}".format(curve_direction)
-    # info_cur = "Curvature {:6.1f} m".format(curvature)
-    # info_offset = "Off center: {0} {1:3.1f}m".format(direction, offset)
-    # info_framerate = "{0:4.1f} fps".format(fps)
-    # info_warning = "Warning: offcenter > 0.6m (use higher threshold in real life)"
-    #
-    # cv2.putText(whole_frame, "Departure Warning System with a Monocular Camera", (23,25), font, 0.8, (255,255,0), 1, cv2.LINE_AA)
-    # cv2.putText(whole_frame, "Origin", (22,70), font, 0.6, (255,255,0), 1, cv2.LINE_AA)
-    # cv2.putText(whole_frame, "Augmented", (40+w+25,70), font, 0.6, (255,255,0), 1, cv2.LINE_AA)
-    # cv2.putText(whole_frame, "Bird's View", (22+30,70+35+h), font, 0.6, (255,255,0), 1, cv2.LINE_AA)
-    # cv2.putText(whole_frame, "Lanes", (22+225,70+35+h), font, 0.6, (255,255,0), 1, cv2.LINE_AA)
-    # cv2.putText(whole_frame, info_road, (40+w+50,70+35+h), font, 0.8, (255,255,0), 1,cv2.LINE_AA)
-    # cv2.putText(whole_frame, info_warning, (35+w,60+h), font, 0.4, (255,255,0), 1,cv2.LINE_AA)
-    # cv2.putText(whole_frame, info_lane, (40+w+50,70+35+40+h), font, 0.8, (255,255,0), 1,cv2.LINE_AA)
-    # cv2.putText(whole_frame, info_cur, (40+w+50,70+35+80+h), font, 0.8, (255,255,0), 1,cv2.LINE_AA)
-    # cv2.putText(whole_frame, info_offset, (40+w+50,70+35+120+h), font, 0.8, (255,255,0), 1,cv2.LINE_AA)
-    # cv2.putText(whole_frame, info_framerate, (40+w+250,70), font, 0.6, (255,255,0), 1,cv2.LINE_AA)
 
     lane_info = {'curvature': curvature, 'curve_direction': curve_direction, 'dev_dir': direction, 'offset': offset}
 
@@ -512,6 +492,7 @@ def create_output_frame(offcenter, pts, undist_ori, fps, curvature, curve_direct
 
 
 def tracker(binary_sub, ploty, visualization=False):
+    # 
 
     left_fit, right_fit = window_search(left_lane.prev_poly, right_lane.prev_poly, binary_sub, margin=100/input_scale, visualization=visualization)
 
@@ -526,8 +507,6 @@ def tracker(binary_sub, ploty, visualization=False):
         right_lane.current_poly = right_fit
         left_lane.cur_fitx = left_fitx
         right_lane.cur_fitx = right_fitx
-        # global tt
-        # tt = tt + 1
     else:
         left_lane.detected = False
         right_lane.detected = False
@@ -568,41 +547,41 @@ def detector(binary_sub, ploty, visualization=False):
 def lane_process(img, visualization=False):
 
     start = timer()
-    # resize the input image according to scale
+    # Redimensiona imagem de entrada de acordo com escala
     img_undist_ = cv2.undistort(img, mtx, dist, None, mtx)
     img_undist = cv2.resize(img_undist_, (0,0), fx=1/input_scale, fy=1/input_scale)
 
-    # find the binary image of lane/edges
+    # Encontra imagem binaria de faixa/borda
     img_binary = find_edges(img_undist)
 
-    # warp the image to bird view
+    # Deforma imagem para birdview
     binary_warped = warper(img_binary, M)  # get binary image contains edges
 
-    # crop the binary image
+    # Corta imagem binaria
     binary_sub = np.zeros_like(binary_warped)
     binary_sub[:, int(150/input_scale):int(-80/input_scale)]  = binary_warped[:, int(150/input_scale):int(-80/input_scale)]
 
-    # start detector or tracker to find the lanes
+    # Inicia detector/tracker para encontrar faixa
     ploty = np.linspace(0, binary_warped.shape[0]-1, binary_warped.shape[0])
-    if left_lane.detected:  # start tracker
+    if left_lane.detected:  # tracker
         tracker(binary_sub, ploty, visualization)
-    else:  # start detector
+    else:  # detector
         detector(binary_sub, ploty, visualization)
 
-    # average among the previous N frames to get the averaged lanes
+    # Media entre os N frames anteriores para gerar a faixa media
     left_lane.process(ploty)
     right_lane.process(ploty)
 
-    # measure the lane curvature
+    # Mede curvatura da faixa
     curvature, curve_direction = measure_lane_curvature(ploty, left_lane.mean_fitx, right_lane.mean_fitx)
 
-    # compute the car's off-center in meters
+    # Computa decentralizacao do carro em metros
     offcenter, pts = compute_car_offcenter(ploty, left_lane.mean_fitx, right_lane.mean_fitx, img_undist)
 
-    # compute the processing frame rate
+    # Computa taxa de processamento de frames
     end = timer()
     fps = 1.0 / (end - start)
 
-    # combine all images into final video output (only for visualization purpose)
+    # Combina todas as imagens em um video de saida final para visualização
     _, single_view, lane_info = create_output_frame(offcenter, pts, img_undist_, fps, curvature, curve_direction, binary_sub)
     return img_undist_, single_view, lane_info
