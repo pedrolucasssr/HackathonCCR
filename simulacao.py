@@ -1,9 +1,9 @@
 from moviepy.editor import VideoFileClip
-from yolo_pipeline import *
-from lane import *
+from yolo-identificador import *
+from faixa import *
 
 
-def pipeline_yolo(img):
+def yolo(img):
 
     img_undist, img_lane_augmented, lane_info = lane_process(img)
     output = vehicle_detection_yolo(img_undist, img_lane_augmented, lane_info)
@@ -20,7 +20,7 @@ if __name__ == "__simulacao__":
         image = mpimg.imread(filename)
 
         # Busca YOLO
-        yolo_result = pipeline_yolo(image)
+        yolo_result = yolo(image)
         plt.figure()
         plt.imshow(yolo_result)
         plt.title('yolo pipeline', fontsize=30)
