@@ -2,9 +2,9 @@ import numpy as np
 import tensorflow as tf
 import cv2
 from timeit import default_timer as timer
-# import time
-# import matplotlib.pyplot as plt
-from visualizations import *
+import time
+import matplotlib.pyplot as plt
+from visualizacao import *
 
 class yolo_tf:
     w_img = 1280
