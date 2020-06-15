@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="pt">
+
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <title>Câmera</title>
+  <link href="../vendor/fontawesome-free/css/all.min.css" rel="stylesheet" type="text/css">
+  <link href="../dashboard/css/sb-admin.css" rel="stylesheet">
+  <link href="style.css" rel="stylesheet">
+</head>
+
+<body>
+  <div id="screen">
+  <span id="msg">(Click na Tela)</span>
+    <br><br><img src="win.png"><br><br>
+    <button class="btn btn-primary btn-block">Voltar</button>
+  </div>
+</body>
+
+<script src="../vendor/jquery/jquery.min.js"></script>
+<script src="../vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+<script src="../vendor/chart.js/Chart.min.js"></script>
+<script src="../dashboard/js/sb-admin.min.js"></script>
+
+</html>
+
+<script>
+  var i = 0;
+  $("#screen").click(function() {
+    $("#msg").html("");
+    if (i == 0) {
+      $("#screen").addClass("gif");
+    }
+    if (i == 1) {
+      $("#screen").removeClass("gif").addClass("win");
+    }
+    i++;
+  });
+</script>

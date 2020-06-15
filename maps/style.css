@@ -1,0 +1,70 @@
+    #map {
+        height: 80vh;
+        /* The height is 400 pixels */
+        width: 100%;
+        /* The width is the width of the web page */
+    }
+
+    img[src*="discord"] {
+        border-radius: 100px !important;
+    }
+
+    .btn-xs {
+        padding: 0.25rem 0.2rem;
+        font-size: 0.875rem;
+        line-height: 0.5;
+        border-radius: 0.2rem;
+    }
+
+    .direcao {
+        background: #002f2f !important;
+        color: #ffffff;
+        height: 20vh;
+        padding: 0.2rem .2rem;
+        margin: 0px;
+        background-color: #e9ecef;
+        border-radius: 0.3rem;
+        text-align: center;
+    }
+
+    .btn-primary {
+        background-color: #092b4c;
+        border-color: #020a13 !important;
+    }
+
+    .inputboxmap {
+        border: none !important;
+        border-bottom: 1px solid gray !important;
+    }
+
+    b,
+    strong {
+        font-weight: 400;
+        font-size: 16px;
+    }
+
+    input {
+        font-size: 14px;
+    }
+
+    h5 {
+        font-weight: 400;
+    }
+
+    .gastation-img {
+        width: 40px !important;
+        height: 40px !important;
+        border-radius: 100px !important;
+    }
+
+    img[src~="google_white5"] {
+        display: none;
+    }
+
+    .gmnoprint {
+        display: none;
+    }
+
+    .gmnoprint {
+        display: none;
+    }

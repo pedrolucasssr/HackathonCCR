@@ -1,0 +1,29 @@
+  #screen {
+      width: 100%;
+      height: 100vh;
+  }
+
+  .gif {
+      background: url(fakeqr.gif);
+      background-size: cover;
+  }
+
+  img {
+      display: none;
+  }
+
+  .btn {
+      display: none;
+      width: 80%;
+      margin: auto;
+  }
+
+  .win img {
+      display: block !important;
+      margin: auto;
+      width: 70%;
+  }
+
+  .win .btn {
+      display: block;
+  }

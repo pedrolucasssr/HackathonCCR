@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="pt">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>Mapas</title>
+    <link href="../vendor/fontawesome-free/css/all.min.css" rel="stylesheet" type="text/css">
+    <link href="../dashboard/css/sb-admin.css" rel="stylesheet">
+    <link href="style.css" rel="stylesheet">
+    <title>Simulação Mapas</title>
+</head>
+
+<body style="margin: 0px;">
+    <div id="map"></div>
+    <div class="direcao">
+        <p class="lead">
+            <h5> <i class="fas fa-location-arrow fa-fw"></i> Direção Suave</h5> <span class="direcao_text">Tenha uma boa viagem!</span> </p>
+    </div>
+</body>
+
+<template class="friend_box">
+    <i class="fas fa-user fa-fw"></i> <b>{nome}</b><br><br>
+    <i class="fas fa-puzzle-piece fa-fw"></i> <b>{pontos} pontos</b><br><br>
+    <input type="text" placeholder="Mensagem" class="inputboxmap">
+    <button class="btn btn-xs btn-primary">
+        <i class="fas fa-paper-plane fa-fw"></i>
+    </button>
+</template>
+
+<template class="gastation_box">
+    <h5> Posto Ipiranga<br>R$ 2,658</h5>
+    <h6>
+    Avaliação<br>
+    <i class="fa fa-star text-warning"></i>
+  	<i class="fa fa-star text-warning"></i>
+  	<i class="fa fa-star text-warning"></i>
+  	<i class="fa fa-star"></i>
+  	<i class="fa fa-star"></i>
+    </h6>
+  	<h6>
+    Diesel<br>
+    <i class="fa fa-star text-warning"></i>
+  	<i class="fa fa-star text-warning"></i>
+  	<i class="fa fa-star text-warning"></i>
+  	<i class="fa fa-star text-warning"></i>
+  	<i class="fa fa-star"></i>
+    </h6>
+    <i class="fas fa-map fa-fw"></i> <b>{endereco}</b>
+    <br>
+    <i class="fas fa-clock fa-fw"></i> <b>{horario}</b>
+    <br>
+    <button class="btn btn-xs btn-primary">
+        <i class="fas fa-phone fa-fw"></i>
+    </button>
+    <button class="btn btn-xs btn-primary">
+        <i class="fas fa-star fa-fw"></i>
+    </button>
+</template>
+<script src="../vendor/jquery/jquery.min.js"></script>
+<script src="../vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+<script src="../vendor/jquery-easing/jquery.easing.min.js"></script>
+<script src="../dashboard/js/sb-admin.min.js"></script>
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyALfU7M0lsorWmEQD5tBh2Hprnfl5mpJmA&callback=initMap&libraries=&v=weekly" defer></script>
+<!-- script do mapa -->
+<script src="script.js"></script>
+
+</html>
